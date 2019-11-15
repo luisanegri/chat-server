@@ -1,82 +1,91 @@
 const express = require('express');
-const app = express();
-const port = 4000;
-const cors = require('cors');
-const corsMiddleWare = cors();
-
 const bodyParser = require('body-parser');
-const jsonParser = bodyParser.json();
-const See = require('json-sse');
+const Sse = require('json-sse');
+const cors = require('cors');
 
-app.use(corsMiddleWare);
+const app = express();
+
+const corsMiddleware = cors();
+app.use(corsMiddleware);
+
+const jsonParser = bodyParser.json();
 app.use(jsonParser);
-app.get('/', (req, res, next) => {
-  res.send('hello');
+
+const port = 4000;
+
+app.get('/', (request, response, next) => {
+  response.send('hello world');
 });
 
-const stream = new See();
+const stream = new Sse();
 
 const streams = {};
 
-app.get('/stream', (req, res, next) => {
+app.get('/stream', (request, response, next) => {
+  // const messages = { a: 1, b: 2 }
   const rooms = Object.keys(messages);
-  //serialize: turn into a string - normally used when needs to send something to the internet
+  // rooms === ['a', 'b']
+
   const string = JSON.stringify(rooms);
 
-  // send the data stored in string to the client
   stream.updateInit(string);
 
-  // replaces the res.send - connect to the client
-  stream.init(req, res);
+  stream.init(request, response);
 });
 
-app.get('/rooms/:roomName', (req, res, next) => {
-  const { roomName } = req.params;
+app.get('/streams/:roomName', (request, response, next) => {
+  const { roomName } = request.params;
+  // roomName === 'fun'
 
-  const { stream } = streams[roomName];
+  const stream = streams[roomName];
 
+  // const messages = {
+  //   fun: ['I'm having fun', 'me too']
+  // }
   const data = messages[roomName];
-  //serialize: turn into a string - normally used when needs to send something to the internet
+  // data === ['I'm having fun', 'me too']
+
   const string = JSON.stringify(data);
 
-  // send the data stored in string to the client
   stream.updateInit(string);
 
-  // replaces the res.send - connect to the client
-  stream.init(req, res);
+  stream.init(request, response);
 });
 
-// rather than repeating code
 function send(data) {
   const string = JSON.stringify(data);
+
   stream.send(string);
 }
 
-// create a new room
-app.post('/room', (req, res, next) => {
-  const { name } = req.body;
+app.post('/room', (request, response, next) => {
+  const { name } = request.body;
 
   send(name);
-  // add dynamic property to an object
+
   messages[name] = [];
+  // messages.room = []
+  // messags.fun = []
 
-  streams[name] = new See();
+  streams[name] = new Sse();
 
-  res.send(name);
+  response.send(name);
 });
 
 const messages = {};
 // {
-//   name: [hi, hello]
-//   fun: ['we are here', 'yes']
+//   name: ['hi', 'hello', 'goodbye'],
+//   fun: ['we are having fun', 'so much fun']
 // }
 
-app.post('/message/:roomName', (req, res, next) => {
-  // get the message out of the body of the req
-  const { message } = req.body;
-  const { roomName } = req.params;
+app.get('/message', (request, response, next) => {
+  response.send(messages);
+});
 
-  // one of those obj commented under messages object
+app.post('/message/:roomName', (request, response, next) => {
+  const { message } = request.body;
+  const { roomName } = request.params;
+
   const room = messages[roomName];
 
   room.push(message);
@@ -87,11 +96,7 @@ app.post('/message/:roomName', (req, res, next) => {
 
   stream.send(string);
 
-  res.send(message);
+  response.send(message);
 });
 
-app.get('/message', (req, res, next) => {
-  res.send(messages);
-});
-
-app.listen(port, () => console.log(`listening on port ${port}`));
+app.listen(port, () => console.log(`Listening on ${port}`));

@@ -28,6 +28,13 @@ const messages = [];
 app.post('/message', (req, res, next) => {
   // get the message out of the body of the req
   const { message } = req.body;
+
+  // convert message to json string
+  const string = JSON.stringify(message);
+
+  // send data over the stream
+  stream.send(string);
+
   // push it to array messages
   messages.push(message);
   res.send(message);

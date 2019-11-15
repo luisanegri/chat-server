@@ -3,10 +3,24 @@ const app = express();
 const port = 4000;
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
+const See = require('json-sse');
 
 app.use(jsonParser);
 app.get('/', (req, res, next) => {
   res.send('hello');
+});
+
+const stream = new See();
+
+app.get('/stream', (req, res, next) => {
+  //serialize: turn into a string - normally used when needs to send something to the internet
+  const string = JSON.stringify(messages);
+
+  // send the data stored in string to the client
+  stream.updateInit(string);
+
+  // replaces the res.send - connect to the client
+  stream.init(req, res);
 });
 
 const messages = [];

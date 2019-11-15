@@ -19,4 +19,8 @@ app.post('/message', (req, res, next) => {
   res.send(message);
 });
 
+app.get('/message', (req, res, next) => {
+  res.send(messages);
+});
+
 app.listen(port, () => console.log(`listening on port ${port}`));
